@@ -319,8 +319,8 @@ export default function AdminPage() {
                   modules={quillModules}
                   formats={quillFormats}
                   placeholder="Write your blog post content here..."
-                  style={{ background: 'var(--bgc)', minHeight: '300px' }}
-                />
+                style={{ background: 'var(--bgc)', minHeight: '300px' }}
+              />
               </div>
             )}
           </div>
