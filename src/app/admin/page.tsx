@@ -312,7 +312,7 @@ export default function AdminPage() {
                   </div>
                 )}
                 <Editor
-                  forwardedRef={quillRef}
+                  ref={quillRef}
                   theme="snow"
                   value={form.content}
                   onChange={val => setForm(f => ({ ...f, content: val }))}
@@ -320,7 +320,7 @@ export default function AdminPage() {
                   formats={quillFormats}
                   placeholder="Write your blog post content here..."
                 style={{ background: 'var(--bgc)', minHeight: '300px' }}
-              />
+                    />
               </div>
             )}
           </div>
