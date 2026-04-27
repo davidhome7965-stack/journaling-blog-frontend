@@ -3,8 +3,8 @@ import { forwardRef } from 'react';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
-const Editor = forwardRef<any, any>((props, ref) => {
-  // @ts-expect-error - react-quill-new type definitions incorrectly omit 'ref'
+const Editor = forwardRef((props: any, ref: any) => {
+  // @ts-ignore - react-quill-new type definitions are incomplete; ref works at runtime
   return <ReactQuill ref={ref} {...props} />;
 });
 

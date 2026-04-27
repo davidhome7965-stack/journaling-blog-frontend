@@ -11,11 +11,10 @@ interface LucideIconProps {
 }
 
 export default function LucideIcon({ name, size = 20, className, style }: LucideIconProps) {
-  const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>>)[name];
-
+  // @ts-ignore - lucide-react exports many utilities; we only need the icon component
+  const IconComponent = LucideIcons[name];
   if (!IconComponent) {
     return <span style={{ width: size, height: size, display: 'inline-block' }} />;
   }
-
   return <IconComponent size={size} className={className} style={style} />;
 }
