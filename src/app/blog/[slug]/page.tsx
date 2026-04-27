@@ -5,35 +5,23 @@ import { stripHtml } from '@/lib/utils';
 import { BlogPost } from '@/types';
 import BlogPostClient from './BlogPostClient';
 
+export const dynamic = 'force-dynamic'; 
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export const revalidate = 60;
 
-// 🔹 Static params generation (SSG के लिए)
+// ✅ Safe static params generation
 export async function generateStaticParams() {
-  const posts = await postAPI.getAll();
-  return posts.map((post) => ({ slug: post.slug }));
-}
-
-// 🔹 Related posts helper
-function getRelatedPosts(currentPost: BlogPost, allPosts: BlogPost[], limit: number = 3): BlogPost[] {
-  // Match by common tags
-  let related = allPosts.filter(
-    (post) =>
-      post._id !== currentPost._id && post.tags.some((tag) => currentPost.tags.includes(tag))
-  );
-
-  // If not enough, fill with recent posts
-  if (related.length < limit) {
-    const recent = allPosts
-      .filter((post) => post._id !== currentPost._id && !related.includes(post))
-      .slice(0, limit - related.length);
-    related = [...related, ...recent];
+  try {
+    const posts = await postAPI.getAll();
+    return posts.map((post) => ({ slug: post.slug }));
+  } catch (error) {
+    console.error('Failed to fetch posts for static params:', error);
+    return []; // Return empty array to avoid build failure
   }
-
-  return related.slice(0, limit);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -49,13 +37,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+function getRelatedPosts(currentPost: BlogPost, allPosts: BlogPost[], limit: number = 3): BlogPost[] {
+  let related = allPosts.filter(
+    (post) =>
+      post._id !== currentPost._id && post.tags.some((tag) => currentPost.tags.includes(tag))
+  );
+  if (related.length < limit) {
+    const recent = allPosts
+      .filter((post) => post._id !== currentPost._id && !related.includes(post))
+      .slice(0, limit - related.length);
+    related = [...related, ...recent];
+  }
+  return related.slice(0, limit);
+}
+
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
   let post: BlogPost | null = null;
   let allPosts: BlogPost[] = [];
 
   try {
-    // Parallel fetch
     [post, allPosts] = await Promise.all([postAPI.getBySlug(slug), postAPI.getAll()]);
     if (!post) return notFound();
   } catch {

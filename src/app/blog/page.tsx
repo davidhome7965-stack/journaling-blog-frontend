@@ -5,6 +5,8 @@ import { postAPI } from '@/lib/api';
 import Link from 'next/link';
 import LucideIcon from '@/components/LucideIcon';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Blog — Journaling Techniques',
   description: 'Articles about journaling techniques, mental health, productivity, and self-discovery.',
@@ -16,15 +18,15 @@ export default async function BlogListPage() {
   let posts = [];
   try {
     posts = await postAPI.getAll();
-  } catch {
-    // API not available yet
+  } catch (error) {
+    console.error('Failed to fetch posts:', error);
+    // If API unavailable, show a friendly message
   }
 
   return (
     <>
       <BlogNavbar />
-
-      {/* Hero Section */}
+      {/* hero and rest of the page */}
       <section className="relative z-10 pt-28 pb-16 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-6" style={{ background: 'var(--cvb)', color: 'var(--cv)', border: '1px solid var(--cvd)' }}>
@@ -40,7 +42,6 @@ export default async function BlogListPage() {
         </div>
       </section>
 
-      {/* Posts Grid */}
       <main className="relative z-10 px-6 pb-20">
         <div className="max-w-6xl mx-auto">
           {posts.length === 0 ? (
@@ -53,10 +54,7 @@ export default async function BlogListPage() {
                 <p className="text-sm font-light mb-6" style={{ color: 'var(--tm)' }}>
                   Blog posts will appear here once published from the admin panel.
                 </p>
-                <Link
-                  href="/admin"
-                  className="bpn inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium"
-                >
+                <Link href="/admin" className="bpn inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium">
                   Go to Admin
                 </Link>
               </div>
