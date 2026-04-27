@@ -1,21 +1,10 @@
-// src/components/Editor.tsx
 import dynamic from 'next/dynamic';
-import { forwardRef, ForwardedRef } from 'react';
-import type { ReactQuillProps } from 'react-quill-new';
+import { forwardRef } from 'react';
 
-const ReactQuill = dynamic(
-  () => import('react-quill-new'),
-  { ssr: false }
-);
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
-type EditorProps = ReactQuillProps & {
-  forwardedRef?: ForwardedRef<any>;
-};
-
-const Editor = forwardRef<any, EditorProps>((props, ref) => {
-  const { forwardedRef, ...rest } = props;
-  // Use forwardedRef if provided, otherwise the regular ref
-  return <ReactQuill ref={forwardedRef || ref} {...rest} />;
+const Editor = forwardRef<any, any>((props, ref) => {
+  return <ReactQuill ref={ref} {...props} />;
 });
 
 Editor.displayName = 'Editor';
