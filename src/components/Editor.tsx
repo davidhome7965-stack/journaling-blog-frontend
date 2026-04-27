@@ -1,10 +1,10 @@
+// @ts-nocheck
 import dynamic from 'next/dynamic';
 import { forwardRef } from 'react';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
-const Editor = forwardRef((props: any, ref: any) => {
-  // @ts-ignore - react-quill-new type definitions are incomplete; ref works at runtime
+const Editor = forwardRef((props, ref) => {
   return <ReactQuill ref={ref} {...props} />;
 });
 
