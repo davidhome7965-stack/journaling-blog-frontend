@@ -27,8 +27,9 @@ export default function AdminPage() {
   const [form, setForm] = useState({ title: '', slug: '', content: '', author: '', tags: '' });
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const quillRef = useRef<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -79,40 +80,38 @@ export default function AdminPage() {
 
   // Image upload handler for ReactQuill
   const imageHandler = () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch(`${API_URL}/upload/image`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        const imageUrl = `${API_URL}${data.url}`; 
-        const quill = quillRef.current?.getEditor();
-        const range = quill.getSelection(true);
-        quill.insertEmbed(range.index, 'image', imageUrl);
-      } catch (err) {
-        console.error(err);
-        setError('Image upload failed. Please try again.');
-      } finally {
-        setIsUploading(false);
-      }
-    };
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`${API_URL}/upload/image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      const imageUrl = `${API_URL}${data.url}`;
+      const quill = quillRef.current; // this is the editor instance
+      const range = quill.getSelection(true);
+      quill.insertEmbed(range.index, 'image', imageUrl);
+    } catch (err) {
+      console.error(err);
+      setError('Image upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
+};
 
   // Quill modules with custom image handler
   const quillModules = {
@@ -312,15 +311,19 @@ export default function AdminPage() {
                   <div className="text-sm py-2 px-3 bg-gray-100 text-gray-600">Uploading image...</div>
                 )}
                 <ReactQuill
-                  ref={quillRef}
-                  theme="snow"
-                  value={form.content}
-                  onChange={val => setForm(f => ({ ...f, content: val }))}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="Write your blog post content here..."
-                  style={{ background: 'var(--bgc)', minHeight: '300px' }}
-                />
+                  ref={(el) => {
+                  if (el) {
+                    quillRef.current = el.getEditor();
+                  }
+                }}
+                theme="snow"
+                value={form.content}
+                onChange={val => setForm(f => ({ ...f, content: val }))}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Write your blog post content here..."
+                style={{ background: 'var(--bgc)', minHeight: '300px' }}
+              />
               </div>
             )}
           </div>
