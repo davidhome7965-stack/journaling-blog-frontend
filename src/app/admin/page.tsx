@@ -8,6 +8,7 @@ import { generateSlug, stripHtml, truncate, formatDate } from '@/lib/utils';
 import LucideIcon from '@/components/LucideIcon';
 import Editor from '@/components/Editor';  // ✅ Use our custom editor
 
+
 import 'react-quill-new/dist/quill.snow.css';
 
 // Quill formats
@@ -78,39 +79,51 @@ export default function AdminPage() {
   };
 
   // Image upload handler for ReactQuill
-  const imageHandler = () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch(`${API_URL}/upload/image`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
-        });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        const imageUrl = `${API_URL}${data.url}`;
-        const quill = quillRef.current; // this is the editor instance
-        const range = quill.getSelection(true);
-        quill.insertEmbed(range.index, 'image', imageUrl);
-      } catch (err) {
-        console.error(err);
-        setError('Image upload failed. Please try again.');
-      } finally {
-        setIsUploading(false);
+ // Image upload handler for ReactQuill
+const imageHandler = () => {
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`${API_URL}/upload/image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      const imageUrl = `${API_URL}${data.url}`;
+      
+      // ✅ सुरक्षित Quill instance प्राप्त करें
+      const quill = quillRef.current?.getEditor();
+      if (!quill) {
+        console.error('Quill editor not ready');
+        setError('Editor not ready. Please refresh and try again.');
+        return;
       }
-    };
+      const range = quill.getSelection(true);
+      if (range) {
+        quill.insertEmbed(range.index, 'image', imageUrl);
+      } else {
+        quill.insertEmbed(0, 'image', imageUrl);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Image upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
+};
 
   // Quill modules with custom image handler
   const quillModules = {
