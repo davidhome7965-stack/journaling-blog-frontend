@@ -1,20 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useCallback } from 'react';
 import { BlogPost } from '@/types';
 import { postAPI, authAPI } from '@/lib/api';
 import { generateSlug, stripHtml, truncate, formatDate } from '@/lib/utils';
 import LucideIcon from '@/components/LucideIcon';
-
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
-import 'react-quill-new/dist/quill.snow.css';
-
-// Quill formats
-const quillFormats = [
-  'header', 'bold', 'italic', 'underline', 'strike',
-  'list', 'blockquote', 'code-block', 'link', 'image'
-];
+import TiptapEditor from '@/components/TiptapEditor';
 
 type View = 'login' | 'list' | 'form';
 
@@ -26,12 +17,6 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', slug: '', content: '', author: '', tags: '' });
   const [saving, setSaving] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const quillRef = useRef<any>(null);
-  const quillEditorRef = useRef<any>(null); // Direct editor reference
-  const [isUploading, setIsUploading] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -78,73 +63,9 @@ export default function AdminPage() {
     setEditingId(null);
   };
 
-  // ✅ Image upload handler - uses direct editor reference
-  const imageHandler = () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch(`${API_URL}/upload/image`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
-        });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        const imageUrl = `${API_URL}${data.url}`;
-
-        // Use the stored editor instance
-        const editor = quillEditorRef.current;
-        if (!editor) {
-          throw new Error('Editor not initialized');
-        }
-
-        let range = editor.getSelection(true);
-        if (!range) {
-          // If no selection, insert at end
-          range = { index: editor.getLength(), length: 0 };
-        }
-        editor.insertEmbed(range.index, 'image', imageUrl);
-        editor.setSelection(range.index + 1, 0);
-        setError('');
-      } catch (err) {
-        console.error(err);
-        setError('Image upload failed. Please try again.');
-      } finally {
-        setIsUploading(false);
-      }
-    };
-  };
-
-  // Quill modules with custom image handler
-  const quillModules = {
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['blockquote', 'code-block'],
-        ['link', 'image'],
-        ['clean'],
-      ],
-      handlers: {
-        image: imageHandler,
-      },
-    },
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.content || form.content === '<p><br></p>') {
+    if (!form.content || form.content === '<p></p>' || form.content.trim() === '') {
       setError('Content is required');
       return;
     }
@@ -235,7 +156,7 @@ export default function AdminPage() {
     );
   }
 
-  // ========== FORM VIEW (Create/Edit) ==========
+  // ========== FORM VIEW ==========
   if (view === 'form') {
     return (
       <div>
@@ -317,32 +238,11 @@ export default function AdminPage() {
 
           <div>
             <label className="block mb-2 text-sm font-medium" style={{ color: 'var(--ts)' }}>Content * (Rich Text)</label>
-            {mounted && (
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--bc)' }}>
-                {isUploading && (
-                  <div className="text-sm py-2 px-3 bg-gray-100 text-gray-600">
-                    Uploading image...
-                  </div>
-                )}
-                {/* @ts-ignore - react-quill-new supports ref but types are incomplete */}
-                <ReactQuill
-                  ref={(el) => {
-                    if (el) {
-                      quillRef.current = el;
-                      // Store the actual Quill editor instance
-                      quillEditorRef.current = el.getEditor();
-                    }
-                  }}
-                  theme="snow"
-                  value={form.content}
-                  onChange={val => setForm(f => ({ ...f, content: val }))}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="Write your blog post content here..."
-                  style={{ background: 'var(--bgc)', minHeight: '300px' }}
-                />
-              </div>
-            )}
+            <TiptapEditor
+              content={form.content}
+              onChange={(newContent) => setForm({ ...form, content: newContent })}
+              placeholder="Write your blog post content here..."
+            />
           </div>
 
           <div className="flex items-center gap-4 pt-4" style={{ borderTop: '1px solid var(--bc)' }}>
