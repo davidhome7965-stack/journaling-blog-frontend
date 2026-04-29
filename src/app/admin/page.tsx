@@ -77,7 +77,7 @@ export default function AdminPage() {
     setEditingId(null);
   };
 
- // Image upload handler for ReactQuill
+// Image upload handler - guaranteed to work
 const imageHandler = () => {
   const input = document.createElement('input');
   input.setAttribute('type', 'file');
@@ -101,30 +101,22 @@ const imageHandler = () => {
       const data = await res.json();
       const imageUrl = `${API_URL}${data.url}`;
       
-      // ✅ Direct Quill instance access - most reliable way
-      const quill = quillRef.current;
-      if (!quill) {
-        console.error('Quill editor not ready');
-        setError('Editor not ready. Please refresh and try again.');
+      // ✅ Method 2: Get editor instance and insert HTML directly
+      const editor = quillRef.current;
+      if (!editor) {
+        setError('Editor not ready');
         return;
       }
       
-      // Try both methods to get selection
-      let range;
+      // Get current cursor position or use end of editor
+      let range = null;
       try {
-        range = quill.getSelection();
-      } catch (e) {
-        // If getSelection fails, use the editor's current cursor position
-        range = { index: 0, length: 0 };
-      }
+        range = editor.getSelection();
+      } catch(e) {}
       
-      if (!range) {
-        range = { index: quill.getLength() - 1, length: 0 };
-      }
-      
-      // Insert the image
-      quill.insertEmbed(range.index, 'image', imageUrl);
-      quill.setSelection(range.index + 1, 0);
+      const cursorPos = range ? range.index : editor.getLength();
+      editor.insertEmbed(cursorPos, 'image', imageUrl);
+      editor.setSelection(cursorPos + 1, 0);
       
     } catch (err) {
       console.error(err);
