@@ -1,4 +1,3 @@
-// src/components/Editor.tsx
 'use client';
 
 import dynamic from 'next/dynamic';
@@ -11,6 +10,7 @@ const Editor = forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     getEditor: () => quillRef.current?.getEditor(),
+    getQuill: () => quillRef.current,
   }));
 
   return <ReactQuill ref={quillRef} {...props} />;
