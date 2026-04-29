@@ -5,7 +5,13 @@ import { BlogPost } from '@/types';
 import { postAPI, authAPI } from '@/lib/api';
 import { generateSlug, stripHtml, truncate, formatDate } from '@/lib/utils';
 import LucideIcon from '@/components/LucideIcon';
-import TiptapEditor from '@/components/TiptapEditor';
+
+import dynamic from 'next/dynamic';
+
+const TiptapEditor = dynamic(() => import('@/components/TiptapEditor'), {
+  ssr: false,
+  loading: () => <div style={{ padding: '20px', textAlign: 'center' }}>Loading editor...</div>
+});
 
 type View = 'login' | 'list' | 'form';
 
