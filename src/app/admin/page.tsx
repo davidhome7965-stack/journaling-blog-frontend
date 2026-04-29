@@ -77,54 +77,63 @@ export default function AdminPage() {
     setEditingId(null);
   };
 
-  // ✅ Fixed Image upload handler for ReactQuill
-  const imageHandler = () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch(`${API_URL}/upload/image`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
-        });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        const imageUrl = `${API_URL}${data.url}`;
-        
-        // ✅ Safe Quill instance access
-        const quill = quillRef.current;
-        if (!quill) {
-          console.error('Quill editor not ready');
-          setError('Editor not ready. Please wait and try again.');
-          return;
-        }
-        
-        // react-quill-new exposes getEditor()
-        const editor = quill.getEditor ? quill.getEditor() : quill;
-        const range = editor.getSelection(true);
-        if (range) {
-          editor.insertEmbed(range.index, 'image', imageUrl);
-        } else {
-          editor.insertEmbed(editor.getLength() - 1, 'image', imageUrl);
-        }
-      } catch (err) {
-        console.error(err);
-        setError('Image upload failed. Please try again.');
-      } finally {
-        setIsUploading(false);
+ // Image upload handler for ReactQuill
+const imageHandler = () => {
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`${API_URL}/upload/image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      const imageUrl = `${API_URL}${data.url}`;
+      
+      // ✅ Direct Quill instance access - most reliable way
+      const quill = quillRef.current;
+      if (!quill) {
+        console.error('Quill editor not ready');
+        setError('Editor not ready. Please refresh and try again.');
+        return;
       }
-    };
+      
+      // Try both methods to get selection
+      let range;
+      try {
+        range = quill.getSelection();
+      } catch (e) {
+        // If getSelection fails, use the editor's current cursor position
+        range = { index: 0, length: 0 };
+      }
+      
+      if (!range) {
+        range = { index: quill.getLength() - 1, length: 0 };
+      }
+      
+      // Insert the image
+      quill.insertEmbed(range.index, 'image', imageUrl);
+      quill.setSelection(range.index + 1, 0);
+      
+    } catch (err) {
+      console.error(err);
+      setError('Image upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
+};
 
   // Quill modules with custom image handler
   const quillModules = {
