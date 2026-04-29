@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const quillRef = useRef<any>(null);
+  const quillEditorRef = useRef<any>(null); // Direct editor reference
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -77,7 +78,7 @@ export default function AdminPage() {
     setEditingId(null);
   };
 
-  // ✅ FIXED: Get the actual Quill editor instance using getEditor()
+  // ✅ Image upload handler - uses direct editor reference
   const imageHandler = () => {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
@@ -85,10 +86,7 @@ export default function AdminPage() {
     input.click();
     input.onchange = async () => {
       const file = input.files?.[0];
-      if (!file) {
-        setIsUploading(false);
-        return;
-      }
+      if (!file) return;
       setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
@@ -103,27 +101,21 @@ export default function AdminPage() {
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
         const imageUrl = `${API_URL}${data.url}`;
-        
-        // Get the actual Quill editor instance
-        const quillComponent = quillRef.current;
-        if (!quillComponent) {
-          setError('Editor not ready. Please refresh.');
-          return;
+
+        // Use the stored editor instance
+        const editor = quillEditorRef.current;
+        if (!editor) {
+          throw new Error('Editor not initialized');
         }
-        const quill = quillComponent.getEditor(); // ✅ this is the key!
-        if (!quill) {
-          setError('Cannot get editor instance');
-          return;
-        }
-        
-        let range = quill.getSelection(true);
+
+        let range = editor.getSelection(true);
         if (!range) {
-          // If no selection, insert at the end
-          range = { index: quill.getLength(), length: 0 };
+          // If no selection, insert at end
+          range = { index: editor.getLength(), length: 0 };
         }
-        quill.insertEmbed(range.index, 'image', imageUrl);
-        quill.setSelection(range.index + 1, 0);
-        
+        editor.insertEmbed(range.index, 'image', imageUrl);
+        editor.setSelection(range.index + 1, 0);
+        setError('');
       } catch (err) {
         console.error(err);
         setError('Image upload failed. Please try again.');
@@ -334,7 +326,13 @@ export default function AdminPage() {
                 )}
                 {/* @ts-ignore - react-quill-new supports ref but types are incomplete */}
                 <ReactQuill
-                  ref={quillRef}
+                  ref={(el) => {
+                    if (el) {
+                      quillRef.current = el;
+                      // Store the actual Quill editor instance
+                      quillEditorRef.current = el.getEditor();
+                    }
+                  }}
                   theme="snow"
                   value={form.content}
                   onChange={val => setForm(f => ({ ...f, content: val }))}
