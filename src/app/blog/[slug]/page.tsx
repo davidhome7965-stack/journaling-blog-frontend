@@ -14,15 +14,15 @@ interface PageProps {
 export const revalidate = 60;
 
 // ✅ Safe static params generation
-export async function generateStaticParams() {
-  try {
-    const posts = await postAPI.getAll();
-    return posts.map((post) => ({ slug: post.slug }));
-  } catch (error) {
-    console.error('Failed to fetch posts for static params:', error);
-    return []; // Return empty array to avoid build failure
-  }
-}
+// export async function generateStaticParams() {
+//   try {
+//     const posts = await postAPI.getAll();
+//     return posts.map((post) => ({ slug: post.slug }));
+//   } catch (error) {
+//     console.error('Failed to fetch posts for static params:', error);
+//     return []; // Return empty array to avoid build failure
+//   }
+// }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
